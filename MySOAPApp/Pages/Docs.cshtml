@@ -1,0 +1,197 @@
+﻿@page
+@model MySOAPApp.Pages.DocsModel
+
+@{
+    ViewData["Title"] = "Dokumentation";
+}
+
+<div style="
+    border:1px solid #808080;
+    background-color:#f5f5f5;
+    padding:15px;">
+
+    <h3>Hinweis</h3>
+
+    <p>
+        Diese Website befindet sich derzeit in Entwicklung.
+    </p>
+
+    <p>
+        Dokumentation, Funktionen und Schnittstellen können sich
+        ohne vorherige Ankündigung ändern.
+    </p>
+
+    <p>
+        Stand: Juni 2026
+    </p>
+
+</div>
+
+<p>
+    <strong>Status:</strong> Vorabversion 1.0 (Entwicklungsstand)
+</p>
+
+<h1>Azure SOAP Gateway - Dokumentation</h1>
+
+<p>
+    Diese Web-App dient als Gateway zwischen einem Blazor-Client
+    und einem lokalen ASP.NET-Core-API-Dienst.
+</p>
+
+<hr />
+
+<h2>1. Architektur</h2>
+
+<pre>
+Blazor Client
+      |
+      v
+Azure SOAP Gateway
+      ^
+      |
+ASP.NET Core API
+      |
+      v
+MSMQ Request Queue
+      |
+      v
+DB-Dienst
+      |
+      v
+SQL Server
+</pre>
+
+<p>
+    Wichtig: Die Azure Web-App sendet nicht aktiv an den lokalen Server.
+    Der lokale ASP.NET-Core-API-Dienst holt die Nachricht aktiv per GET ab.
+</p>
+
+<hr />
+
+<h2>2. Endpunkte</h2>
+
+<h3>POST /api/hello</h3>
+
+<p>Speichert eine SOAP/XML-Nachricht in der Azure Web-App.</p>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Eigenschaft</th>
+        <th>Wert</th>
+    </tr>
+    <tr>
+        <td>Methode</td>
+        <td>POST</td>
+    </tr>
+    <tr>
+        <td>Content-Type</td>
+        <td>application/xml</td>
+    </tr>
+    <tr>
+        <td>Aufrufer</td>
+        <td>Blazor Client</td>
+    </tr>
+</table>
+
+<h4>Beispiel Request</h4>
+
+<pre>
+&lt;?xml version="1.0"?&gt;
+&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+    &lt;soap:Body&gt;
+        &lt;Message&gt;Hallo Azure&lt;/Message&gt;
+    &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+</pre>
+
+<hr />
+
+<h3>GET /api/hello</h3>
+
+<p>
+    Liefert die gespeicherte SOAP/XML-Nachricht zurück.
+    Danach wird die Nachricht gelöscht.
+</p>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Eigenschaft</th>
+        <th>Wert</th>
+    </tr>
+    <tr>
+        <td>Methode</td>
+        <td>GET</td>
+    </tr>
+    <tr>
+        <td>Aufrufer</td>
+        <td>ASP.NET Core API Dienst</td>
+    </tr>
+    <tr>
+        <td>Antworttyp</td>
+        <td>application/xml</td>
+    </tr>
+</table>
+
+<hr />
+
+<h3>GET /api/hello/ping</h3>
+
+<p>Prüft, ob die Azure Web-App erreichbar ist.</p>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Eigenschaft</th>
+        <th>Wert</th>
+    </tr>
+    <tr>
+        <td>Methode</td>
+        <td>GET</td>
+    </tr>
+    <tr>
+        <td>Antwort</td>
+        <td>OK</td>
+    </tr>
+</table>
+
+<hr />
+
+<h2>3. Nachrichtenfluss</h2>
+
+<ol>
+    <li>Der Benutzer gibt im Blazor Client eine Nachricht ein.</li>
+    <li>Blazor erzeugt daraus eine SOAP/XML-Nachricht.</li>
+    <li>Blazor sendet die Nachricht per POST an die Azure Web-App.</li>
+    <li>Die Azure Web-App speichert die letzte Nachricht.</li>
+    <li>Der lokale ASP.NET-Core-API-Dienst fragt regelmäßig per GET ab.</li>
+    <li>Wenn eine Nachricht vorhanden ist, wird sie zurückgegeben und gelöscht.</li>
+    <li>Der lokale Dienst schreibt die XML-Nachricht in MSMQ.</li>
+</ol>
+
+<hr />
+
+<h2>4. Geplanter Rückweg</h2>
+
+<pre>
+SQL Server
+      ^
+      |
+DB-Dienst
+      ^
+      |
+MSMQ Response Queue
+      ^
+      |
+ASP.NET Core API
+      |
+      v
+Azure SOAP Gateway
+      |
+      v
+Blazor Client
+</pre>
+
+<hr />
+
+<p>
+    <a href="/">Zur Startseite</a>
+</p>

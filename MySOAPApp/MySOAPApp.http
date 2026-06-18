@@ -1,0 +1,6 @@
+@MySOAPApp_HostAddress = http://localhost:5286
+
+GET {{MySOAPApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
