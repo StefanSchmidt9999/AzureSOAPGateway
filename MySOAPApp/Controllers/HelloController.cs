@@ -2,58 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using MSMQ.Messaging;
 using System.Text;
-
-//namespace MySOAPApp.Controllers
-//{
-//    [ApiController]
-//    [Route("api/[controller]")]
-//    public class HelloController : ControllerBase
-//    {
-//        private static string _lastXml;
-//        private static readonly object _lock = new object();
-
-//        // Blazor sendet SOAP XML hierhin
-//        [HttpPost]
-//        public async Task<IActionResult> Post()
-//        {
-//            using var reader = new StreamReader(Request.Body);
-//            string xml = await reader.ReadToEndAsync();
-
-//            lock (_lock)
-//            {
-//                _lastXml = xml;
-//            }
-
-//            return Ok();
-
-//            return Ok();
-//        }
-
-//        // Server holt exakt das gleiche XML
-//        [HttpGet]
-//        public IActionResult Get()
-//        {
-//            string? xml;
-
-//            lock (_lock)
-//            {
-//                if (string.IsNullOrEmpty(_lastXml))
-//                    return Content("Keine XML", "text/plain");
-
-//                xml = _lastXml;
-//                _lastXml = null;
-//            }
-
-//            return Content(xml, "application/xml");
-//        }
-
-//        [HttpGet("ping")]
-//        public IActionResult Ping()
-//        {
-//            return Content("OK", "text/plain");
-//        }
-//    }
-//}
+using System.Security;
+using System.Xml.Linq;
 
 namespace MySOAPApp.Controllers
 {
@@ -108,6 +58,48 @@ namespace MySOAPApp.Controllers
         public IActionResult Ping()
         {
             return Content("OK", "text/plain");
+        }
+
+
+        [HttpPost("test")]
+        public async Task<IActionResult> Test()
+        {
+            string xml = await new StreamReader(Request.Body).ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(xml))
+                return BadRequest("Keine XML empfangen.");
+
+            XDocument doc = XDocument.Parse(xml);
+
+            string? clientId = doc.Descendants("ClientId").FirstOrDefault()?.Value;
+            string? requestId = doc.Descendants("RequestId").FirstOrDefault()?.Value;
+
+            if (string.IsNullOrWhiteSpace(clientId))
+                return BadRequest("ClientId fehlt.");
+
+            if (string.IsNullOrWhiteSpace(requestId))
+                return BadRequest("RequestId fehlt.");
+
+            bool clientOk = clientId == "CPP-CLIENT-001";
+
+            string status = clientOk ? "OK" : "DENIED";
+            string result = clientOk
+                ? "ClientId wurde akzeptiert."
+                : "ClientId ist nicht zugelassen.";
+
+            string responseXml = $@"<?xml version=""1.0""?>
+                <soap:Envelope xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+                    <soap:Body>
+                        <Response>
+                            <ClientId>{SecurityElement.Escape(clientId)}</ClientId>
+                            <RequestId>{SecurityElement.Escape(requestId)}</RequestId>
+                            <Status>{status}</Status>
+                            <Result>{SecurityElement.Escape(result)}</Result>
+                        </Response>
+                    </soap:Body>
+                </soap:Envelope>";
+
+            return Content(responseXml, "application/xml");
         }
     }
 }
