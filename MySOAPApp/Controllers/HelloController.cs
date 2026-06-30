@@ -108,7 +108,6 @@ namespace MySOAPApp.Controllers
                 return Content(html, "text/html; charset=utf-8");
             }
         }
-
         [HttpPost("response")]
         public async Task<IActionResult> Response()
         {
@@ -121,12 +120,37 @@ namespace MySOAPApp.Controllers
             lock (_lock)
             {
                 _responses.Enqueue(xml);
-
-                _lastReceivedXml = xml;
-                _lastReceivedTime = DateTime.Now;
             }
 
-            return Ok("<ok/>");
+            return Content("<ok/>", "application/xml");
+        }
+
+        [HttpGet("response/status")]
+        public IActionResult ResponseStatus()
+        {
+            lock (_lock)
+            {
+                return Content( $"Responses in Queue: {_responses.Count}", "text/plain");
+            }
+        }
+
+        [HttpGet("response")]
+        public IActionResult GetResponse()
+        {
+            string? xml = null;
+
+            lock (_lock)
+            {
+                if (_responses.Count > 0)
+                {
+                    xml = _responses.Dequeue();
+                }
+            }
+
+            if (xml == null)
+                return NoContent();
+
+            return Content(xml, "application/xml");
         }
 
         [HttpGet("ping")]
