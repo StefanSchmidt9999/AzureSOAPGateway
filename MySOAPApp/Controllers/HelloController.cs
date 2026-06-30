@@ -15,6 +15,7 @@ namespace MySOAPApp.Controllers
         private static DateTime? _lastReceivedTime;
 
         private static readonly Queue<string> _messages = new Queue<string>();
+        private static readonly Queue<string> _responses = new Queue<string>();
         private static readonly object _lock = new object();
 
         //[HttpPost]
@@ -106,6 +107,26 @@ namespace MySOAPApp.Controllers
 
                 return Content(html, "text/html; charset=utf-8");
             }
+        }
+
+        [HttpPost("response")]
+        public async Task<IActionResult> Response()
+        {
+            using var reader = new StreamReader(Request.Body);
+            string xml = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(xml))
+                return BadRequest("Keine XML empfangen.");
+
+            lock (_lock)
+            {
+                _responses.Enqueue(xml);
+
+                _lastReceivedXml = xml;
+                _lastReceivedTime = DateTime.Now;
+            }
+
+            return Ok("<ok/>");
         }
 
         [HttpGet("ping")]
